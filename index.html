@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Santa's Warm Morning - Science Wishes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap');
+        
+        :root {
+            --christmas-red: #D42426;
+            --christmas-green: #165B33;
+            --christmas-yellow: #F8B229;
+            --soft-white: #F8F9FA;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #FFD194, #70E1F5);
+        }
+
+        /* Scenery Elements */
+        .scenery {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .sun {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #FFF9C4 0%, #F8B229 70%, transparent 100%);
+            border-radius: 50%;
+            filter: blur(15px);
+            opacity: 0.8;
+        }
+
+        .mountain {
+            position: absolute;
+            bottom: 0;
+            border-left: 50vw solid transparent;
+            border-right: 50vw solid transparent;
+            border-bottom: 40vh solid #FFFFFF;
+        }
+
+        .mountain-back {
+            bottom: 0;
+            left: -10vw;
+            border-left: 40vw solid transparent;
+            border-right: 40vw solid transparent;
+            border-bottom: 50vh solid #E3F2FD;
+            opacity: 0.6;
+        }
+
+        /* Sparkles */
+        .sparkle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fall var(--duration) linear infinite;
+            opacity: var(--opacity);
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh) translateX(0); }
+            100% { transform: translateY(110vh) translateX(15px); }
+        }
+
+        /* Gift Animation */
+        .gift-box {
+            position: absolute;
+            animation: fall-and-bounce 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            cursor: pointer;
+        }
+
+        @keyframes fall-and-bounce {
+            0% { transform: translateY(-100px) scale(0.5); opacity: 0; }
+            100% { transform: translateY(var(--target-y)) scale(1); opacity: 1; }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-red { background: var(--christmas-red); color: white; }
+        .btn-green { background: var(--christmas-green); color: white; }
+
+        .hidden-view { display: none !important; }
+
+        input, textarea {
+            background: rgba(255, 255, 255, 0.6) !important;
+            border: 1.5px solid rgba(0, 0, 0, 0.05) !important;
+            color: #333 !important;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--christmas-green) !important;
+            background: white !important;
+            box-shadow: 0 0 0 4px rgba(22, 91, 51, 0.08) !important;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Background Layer -->
+    <div class="scenery">
+        <div class="sun"></div>
+        <div class="mountain mountain-back"></div>
+        <div class="mountain"></div>
+    </div>
+    <div id="sparkle-container"></div>
+
+    <!-- VIEW 1: MAIN DISPLAY (For PC/Large Screens) -->
+    <div id="main-view" class="relative h-screen w-full flex flex-col items-center justify-between py-12 px-6 z-10">
+        <header class="text-center">
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-2 tracking-tight">
+                Santa's <span class="text-[var(--christmas-green)]">Morning</span> Lab
+            </h1>
+            <p class="text-xs font-medium uppercase tracking-[0.3em] text-slate-500">Science of Giving & Wishes</p>
+        </header>
+
+        <div id="gift-pile" class="relative flex-grow w-full max-w-5xl overflow-hidden pointer-events-none">
+            <!-- Falling gifts -->
+        </div>
+
+        <footer class="w-full max-w-lg">
+            <div class="glass-card p-6 flex items-center gap-6 shadow-xl border-white/50">
+                <div id="qrcode" class="shrink-0 bg-white p-2 rounded-2xl border-4 border-[var(--christmas-yellow)]"></div>
+                <div class="flex-grow">
+                    <h2 class="text-lg font-bold">สแกนเพื่อส่งความสุข</h2>
+                    <p class="text-xs text-slate-500 mb-4 mt-1">ส่งความในใจเพื่อรับ SantaCode สะสมสแตมป์</p>
+                    <button onclick="switchToWriteMode()" class="w-full btn-red py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i> เขียนความในใจที่นี่
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- VIEW 2: WRITE MODE (For Mobile/Scanners) -->
+    <div id="write-view" class="relative h-screen w-full flex flex-col items-center justify-center p-6 z-20 hidden-view overflow-y-auto">
+        <div class="glass-card w-full max-w-md p-8 relative">
+            <header class="text-center mb-8">
+                <div class="inline-block p-3 bg-red-50 rounded-full mb-3">
+                    <i data-lucide="heart" class="text-[var(--christmas-red)] w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-bold">ส่งความในใจถึงแซนต้า</h2>
+                <p class="text-xs text-slate-500 mt-2">กรอกข้อมูลเพื่อรับรหัสสะสมสแตมป์</p>
+            </header>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1">รหัสนักศึกษา</label>
+                    <input type="text" id="input-sid" placeholder="ระบุรหัส 10 หลักของคุณ..." class="w-full px-5 py-4 rounded-2xl outline-none text-sm transition-all">
+                    <p class="text-[10px] text-slate-400 mt-2 italic leading-relaxed pl-1">
+                        * รหัสนี้จะถูกเก็บเป็นความลับเพื่อใช้เชื่อมโยงการสะสมสแตมป์เท่านั้น
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1">ชื่อหรือฉายา</label>
+                    <input type="text" id="input-name" placeholder="ชื่อที่จะแสดงบนของขวัญ..." class="w-full px-5 py-4 rounded-2xl outline-none text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1">ความในใจ</label>
+                    <textarea id="input-message" rows="3" placeholder="ความรู้สึกที่อยากบอกแซนต้า..." class="w-full px-5 py-4 rounded-2xl outline-none text-sm resize-none"></textarea>
+                </div>
+                <button id="submit-btn" class="w-full btn-red py-4 rounded-2xl font-bold text-lg shadow-lg active:scale-95 transition-all">
+                    ส่งข้อมูล & รับรหัส
+                </button>
+                
+                <button onclick="switchToMainMode()" class="w-full text-slate-400 text-xs font-medium py-2">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal (Common) -->
+    <div id="result-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[100] hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm p-10 text-center rounded-[40px] shadow-2xl relative border-b-8 border-[var(--christmas-yellow)]">
+            <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="gift" class="text-emerald-500 w-12 h-12"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">ส่งสำเร็จแล้ว!</h3>
+            <p class="text-sm text-slate-500 mb-8">SantaCode ของคุณคือ</p>
+            
+            <div id="display-santa-code" class="text-5xl font-mono font-black text-[var(--christmas-green)] py-6 mb-8 rounded-3xl bg-slate-50 shadow-inner tracking-widest">
+                ----
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button id="copy-btn" class="flex items-center justify-center gap-3 bg-[var(--christmas-green)] py-4 rounded-2xl font-bold text-white shadow-lg active:scale-95 transition-all">
+                    <i data-lucide="copy" class="w-5 h-5"></i> คัดลอกรหัส
+                </button>
+                <button onclick="location.reload()" class="text-sm font-semibold text-slate-400 py-2">กลับหน้าหลัก</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBSODrRewqxiV0q5rjQ6nLDWabumiFmbQQ",
+            authDomain: "stamp-booth.firebaseapp.com",
+            projectId: "stamp-booth",
+            storageBucket: "stamp-booth.firebasestorage.app",
+            messagingSenderId: "996394633734",
+            appId: "1:996394633734:web:38e6594b45ae0d2088d187"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'stamp-booth-v1';
+        const collectionPath = ['artifacts', appId, 'public', 'data', 'tellsanta'];
+        const santaCollection = collection(db, ...collectionPath);
+
+        const generateSantaCode = () => {
+            const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // No O, 0
+            let res = '';
+            for (let i = 0; i < 4; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+            return res;
+        };
+
+        const initIcons = () => { if (window.lucide) window.lucide.createIcons(); };
+
+        const initAuth = async () => {
+            if (auth.currentUser) return auth.currentUser;
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    return (await signInWithCustomToken(auth, __initial_auth_token)).user;
+                }
+                return (await signInAnonymously(auth)).user;
+            } catch (err) { return null; }
+        };
+
+        // UI View Toggling Logic (Fixed: Replaced pushState with direct DOM toggle to avoid SecurityError)
+        const checkMode = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode');
+            if (mode === 'write') {
+                showWriteView();
+            } else {
+                showMainView();
+            }
+        };
+
+        const showWriteView = () => {
+            document.getElementById('main-view').classList.add('hidden-view');
+            document.getElementById('write-view').classList.remove('hidden-view');
+        };
+
+        const showMainView = () => {
+            document.getElementById('main-view').classList.remove('hidden-view');
+            document.getElementById('write-view').classList.add('hidden-view');
+            generateQR();
+        };
+
+        window.switchToWriteMode = () => {
+            showWriteView();
+        };
+
+        window.switchToMainMode = () => {
+            showMainView();
+        };
+
+        const createSnow = () => {
+            const container = document.getElementById('sparkle-container');
+            if (!container) return;
+            for (let i = 0; i < 50; i++) {
+                const s = document.createElement('div');
+                s.className = 'sparkle';
+                const size = Math.random() * 4 + 2;
+                s.style.width = `${size}px`;
+                s.style.height = `${size}px`;
+                s.style.left = `${Math.random() * 100}vw`;
+                s.style.setProperty('--duration', `${Math.random() * 12 + 10}s`);
+                s.style.setProperty('--opacity', Math.random() * 0.5 + 0.2);
+                s.style.animationDelay = `${Math.random() * 10}s`;
+                container.appendChild(s);
+            }
+        };
+
+        const generateQR = () => {
+            const qrTarget = document.getElementById("qrcode");
+            if (!qrTarget) return;
+            qrTarget.innerHTML = "";
+            // Keep the query param for external scanning, but handle locally in the app
+            const currentUrl = window.location.origin + window.location.pathname;
+            new QRCode(qrTarget, {
+                text: `${currentUrl}?mode=write`, 
+                width: 120,
+                height: 120,
+                colorDark : "#165B33",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        };
+
+        const dropGift = (wish, index) => {
+            const pile = document.getElementById('gift-pile');
+            if (!pile) return;
+            const gift = document.createElement('div');
+            gift.className = 'gift-box';
+            const colors = ['#D42426', '#165B33', '#F8B229', '#1D4E89'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            const size = 50 + Math.random() * 30;
+            const left = 5 + (Math.random() * 90);
+            const rotation = (Math.random() * 40) - 20;
+            const targetY = (pile.offsetHeight - 90) - (Math.min(index, 25) * 8); 
+
+            gift.style.left = `${left}%`;
+            gift.style.width = `${size}px`;
+            gift.style.height = `${size}px`;
+            gift.style.setProperty('--target-y', `${targetY}px`);
+
+            gift.innerHTML = `
+                <div class="relative w-full h-full" style="transform: rotate(${rotation}deg)">
+                    <div class="absolute inset-0 rounded-2xl" style="background: ${color}; box-shadow: inset -4px -4px 10px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.1)"></div>
+                    <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1/5 bg-white/30"></div>
+                    <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1/4 bg-white/30"></div>
+                    <div class="absolute -top-3 -right-2 bg-white text-slate-800 text-[8px] px-2 py-0.5 rounded-lg shadow-sm border border-slate-100 font-bold rotate-12">
+                        ${wish.name || 'Friend'}
+                    </div>
+                </div>
+            `;
+            pile.appendChild(gift);
+        };
+
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            const sid = document.getElementById('input-sid').value.trim();
+            const name = document.getElementById('input-name').value.trim();
+            const msg = document.getElementById('input-message').value.trim();
+            const btn = document.getElementById('submit-btn');
+
+            if (!sid || !name || !msg) return;
+
+            btn.disabled = true;
+            btn.innerHTML = 'กำลังเตรียมของขวัญ...';
+
+            try {
+                const user = await initAuth();
+                const docRef = doc(db, ...collectionPath, sid);
+                const existing = await getDoc(docRef);
+                const scode = (existing.exists() && existing.data().SantaCode) ? existing.data().SantaCode : generateSantaCode();
+
+                await setDoc(docRef, {
+                    studentId: sid,
+                    name: name,
+                    message: msg,
+                    timestamp: new Date(),
+                    uid: user.uid,
+                    SantaCode: scode
+                });
+                
+                document.getElementById('display-santa-code').innerText = scode;
+                document.getElementById('result-modal').classList.remove('hidden');
+                initIcons();
+            } catch (err) {
+                console.error("Submission Error:", err);
+                btn.innerHTML = 'ลองใหม่อีกครั้ง';
+                btn.disabled = false;
+            }
+        });
+
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const txt = document.getElementById('display-santa-code').innerText;
+            const el = document.createElement("input");
+            el.value = txt; document.body.appendChild(el);
+            el.select(); document.execCommand("copy");
+            document.body.removeChild(el);
+            document.getElementById('copy-btn').innerText = 'คัดลอกสำเร็จ!';
+            setTimeout(() => { document.getElementById('copy-btn').innerHTML = '<i data-lucide="copy" class="w-5 h-5"></i> คัดลอกรหัส'; initIcons(); }, 2000);
+        });
+
+        window.onload = async () => {
+            initIcons();
+            createSnow();
+            checkMode(); // Handle initial check for mode=write from URL
+            await initAuth();
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    onSnapshot(santaCollection, (snap) => {
+                        const items = [];
+                        snap.forEach(d => items.push(d.data()));
+                        const sorted = items.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+                        const pile = document.getElementById('gift-pile');
+                        if (pile) {
+                            pile.innerHTML = '';
+                            sorted.slice(-35).forEach((item, idx) => dropGift(item, idx));
+                        }
+                    }, (error) => {
+                        console.error("Snapshot error:", error);
+                    });
+                }
+            });
+        };
+
+        // Listen for browser back/forward if the URL did change externally
+        window.onpopstate = checkMode;
+    </script>
+</body>
+</html>
