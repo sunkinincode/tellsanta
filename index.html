@@ -3,93 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tell Santa บอกความในใจแซนต้า</title>
+    <title>TellSanta บอกความในใจแซนต้า</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Sans Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --christmas-red: #D42426;
-            --christmas-green: #165B33;
-            --christmas-yellow: #F8B229;
-            --twilight-sky: linear-gradient(180deg, #FFD194 0%, #F9A8D4 40%, #bae6fd 100%);
+            --xmas-red: #d42426;
+            --xmas-green: #165b33;
+            --xmas-gold: #f8b229;
         }
 
         body {
             font-family: 'Google Sans', sans-serif;
             margin: 0;
             overflow: hidden;
-            background: var(--twilight-sky);
+            background-color: #f8fafc;
+            color: #334155;
         }
 
-        /* Scenery */
-        .scenery {
+        /* --- BACKGROUND SETTINGS --- */
+        .bg-main {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('Background.png'); 
+            background-size: cover;
+            background-position: center;
+            z-index: -2;
+        }
+
+        .bg-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(137, 97, 2, 0.136), rgba(0, 0, 0, 0.2));
+            backdrop-filter: blur(3px);
+            z-index: -1;
+        }
+
+        /* Header Title Card Style */
+        .title-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 2.5rem;
+            padding: 1.5rem 3rem;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Santa Sleigh & Gift Train Animation */
+        #sleigh-container {
             position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
+            top: 40%;
+            left: -150%; 
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            z-index: 10;
             pointer-events: none;
+            animation: fly-across 35s linear infinite;
         }
 
-        .snow-field {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 25vh;
-            background: #ffffff;
-            border-top-left-radius: 50% 15%;
-            border-top-right-radius: 50% 15%;
-            box-shadow: 0 -20px 50px rgba(255,255,255,0.6);
+        @keyframes fly-across {
+            0% { left: -150%; transform: translateY(0); }
+            25% { transform: translateY(-40px); }
+            50% { transform: translateY(0); }
+            75% { transform: translateY(40px); }
+            100% { left: 150%; transform: translateY(0); }
+        }
+
+        .santa-sleigh {
+            font-size: 85px;
+            margin-right: 70px; 
+            filter: drop-shadow(0 15px 20px rgba(0,0,0,0.2));
+            pointer-events: auto;
+            position: relative;
+            z-index: 50;
+        }
+
+        .gift-item {
+            display: inline-block;
+            position: relative;
+            margin-right: 130px; 
+            vertical-align: middle;
+            animation: bobbing 3s ease-in-out infinite;
             z-index: 5;
         }
 
-        /* Physics Animation for Gifts */
-        .gift-box {
-            position: absolute;
-            animation: physics-fall 1s cubic-bezier(0.47, 0, 0.745, 0.715) forwards,
-                       physics-bounce 0.4s 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            cursor: pointer;
+        @keyframes bobbing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .gift-box-visual {
+            width: 75px;
+            height: 75px;
+            border-radius: 20px;
+            position: relative;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+            pointer-events: auto;
             z-index: 10;
+            border: 2px solid rgba(255,255,255,0.2);
         }
 
-        @keyframes physics-fall {
-            0% { transform: translateY(-200px) rotate(var(--rot-start)) scale(0.5); opacity: 0; }
-            100% { transform: translateY(var(--target-y)) rotate(var(--rot-end)) scale(1); opacity: 1; }
+        .gift-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -135px;
+            width: 135px;
+            height: 6px; 
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--xmas-red),
+                var(--xmas-red) 8px,
+                #ffffff 8px,
+                #ffffff 16px
+            );
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1;
+            transform: translateY(-50%);
         }
 
-        @keyframes physics-bounce {
-            0% { transform: translateY(var(--target-y)) rotate(var(--rot-end)); }
-            50% { transform: translateY(calc(var(--target-y) - 15px)) rotate(calc(var(--rot-end) + 5deg)); }
-            100% { transform: translateY(var(--target-y)) rotate(var(--rot-end)); }
+        .gift-item::after {
+            content: '🎀';
+            position: absolute;
+            top: 50%;
+            left: -75px;
+            transform: translate(-50%, -55%) rotate(-10deg);
+            font-size: 20px;
+            z-index: 2;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
         }
 
-        /* Scroll Text Animation */
         .gift-scroll-container {
             position: absolute;
-            bottom: -20px;
+            bottom: -38px;
             left: 50%;
             transform: translateX(-50%);
-            width: 120px;
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 20px;
+            width: 170px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
             overflow: hidden;
             white-space: nowrap;
-            padding: 2px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 6px 0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            z-index: 20;
         }
 
         .gift-scroll-text {
             display: inline-block;
             padding-left: 100%;
-            animation: marquee 8s linear infinite;
-            font-size: 10px;
-            font-weight: bold;
-            color: var(--christmas-green);
+            animation: marquee 10s linear infinite;
+            font-size: 11px;
+            font-weight: 800;
+            color: #ffffff;
         }
 
         @keyframes marquee {
@@ -97,23 +177,48 @@
             100% { transform: translate(-100%, 0); }
         }
 
-        /* Particles */
-        .shooting-star {
+        .tape-label {
             position: absolute;
-            width: 2px;
-            height: 2px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 0 10px 2px white;
-            animation: shoot var(--speed) linear infinite;
+            top: -8px;
+            right: -12px;
+            background: var(--xmas-red);
+            color: white;
+            padding: 4px 10px;
+            transform: rotate(6deg);
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.15);
+            border-left: 3px dotted white;
+            border-right: 3px dotted white;
+            font-size: 9px;
+            font-weight: 800;
+            z-index: 30;
         }
 
-        @keyframes shoot {
-            0% { transform: translateX(0) translateY(0) rotate(-45deg) scale(0); opacity: 0; }
-            10% { opacity: 1; }
-            30% { transform: translateX(-600px) translateY(600px) rotate(-45deg) scale(1.5); opacity: 0; }
-            100% { opacity: 0; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
         }
+
+        .btn-hub-red {
+            background: var(--xmas-red);
+            color: white;
+            box-shadow: 0 10px 25px rgba(212, 36, 38, 0.2);
+            transition: all 0.3s ease;
+        }
+        .btn-hub-red:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-hub-red:active { transform: scale(0.95); }
+
+        .input-hub {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 1.25rem;
+            transition: all 0.2s ease;
+        }
+        .input-hub:focus { border-color: var(--xmas-red); background: white; outline: none; }
+
+        .hidden-view { display: none !important; }
 
         .sparkle {
             position: absolute;
@@ -122,67 +227,50 @@
             pointer-events: none;
             animation: fall var(--duration) linear infinite;
             opacity: var(--opacity);
-            filter: blur(1px);
+            z-index: 1;
         }
-
         @keyframes fall {
             0% { transform: translateY(-10vh) translateX(0); }
-            100% { transform: translateY(110vh) translateX(25px); }
-        }
-
-        /* UI */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
-        }
-
-        .btn-primary { background: var(--christmas-red); color: white; box-shadow: 0 8px 25px rgba(212, 36, 38, 0.2); }
-        .hidden-view { display: none !important; }
-        
-        input, textarea {
-            background: rgba(255, 255, 255, 0.5) !important;
-            border: 1px solid rgba(0, 0, 0, 0.05) !important;
-        }
-
-        .error-message {
-            color: var(--christmas-red);
-            font-size: 12px;
-            font-weight: bold;
-            margin-top: 8px;
-            text-align: center;
+            100% { transform: translateY(110vh) translateX(15px); }
         }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-900">
 
-    <div class="scenery">
-        <div id="shooting-stars-container"></div>
-        <div class="snow-field"></div>
-    </div>
+    <div class="bg-main"></div>
+    <div class="bg-overlay"></div>
     <div id="sparkle-container"></div>
 
     <!-- MAIN VIEW -->
-    <div id="main-view" class="relative h-screen w-full flex flex-col items-center justify-between py-12 px-6 z-10">
-        <header class="text-center">
-            <h1 class="text-4xl md:text-6xl font-extrabold mb-2 tracking-tight text-slate-900 drop-shadow-sm">
-                Tell Santa <span class="text-[var(--christmas-red)]">Wishes</span>
-            </h1>
-            <p class="text-sm font-medium uppercase tracking-[0.2em] text-slate-600">บอกความในใจของคุณกับแซนต้า</p>
+    <div id="main-view" class="max-w-xl mx-auto relative h-screen flex flex-col z-10">
+        <!-- Header with Title Card -->
+        <header class="flex flex-col items-center pt-10 pb-4 text-center z-20">
+            <div class="title-card">
+                <div class="bg-[var(--xmas-red)] p-2.5 rounded-2xl text-white shadow-lg mb-3">
+                    <i data-lucide="atom" class="w-6 h-6"></i>
+                </div>
+                <h1 class="font-black text-5xl tracking-tight text-[var(--xmas-green)] leading-tight text-balance">TellSanta</h1>
+                <h2 class=" text-2xl text-[var(--xmas-red)] mt-2 font-bold text-balance">บอกความในใจแซนต้า</h2>
+            </div>
         </header>
 
-        <div id="gift-pile" class="relative flex-grow w-full max-w-5xl overflow-hidden pointer-events-none"></div>
+        <!-- Sleigh & Train FLYING AREA -->
+        <div id="sleigh-container">
+            <div class="santa-sleigh">🛷🎅</div>
+            <div id="gift-train" class="inline-flex items-center">
+                <!-- Gifts loaded dynamically -->
+            </div>
+        </div>
 
-        <footer class="w-full max-w-lg">
-            <div class="glass-card p-6 flex items-center gap-6 border-white/50 shadow-2xl">
-                <div id="qrcode" class="shrink-0 bg-white p-2 rounded-3xl border-4 border-[var(--christmas-yellow)] shadow-sm"></div>
-                <div class="flex-grow">
-                    <h2 class="text-xl font-bold">สแกนส่งความสุข</h2>
-                    <p class="text-xs text-slate-500 mb-4 mt-1">รับ SantaCode สำหรับสะสมสแตมป์กิจกรรม</p>
-                    <button onclick="switchToWriteMode()" class="w-full btn-primary py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transform active:scale-95 transition-all">
-                        <i data-lucide="edit-3" class="w-4 h-4"></i> เขียนข้อความ
+        <!-- Footer -->
+        <footer class="p-6 z-20 mt-auto">
+            <div class="glass-card p-5 flex items-center gap-6 border-white/80 shadow-2xl">
+                <div id="qrcode" class="shrink-0 bg-white p-2 rounded-2xl border-4 border-[var(--xmas-green)] shadow-inner"></div>
+                <div class="text-left flex-grow">
+                    <h2 class="text-xl font-black text-slate-800 leading-tight">สแกนกับกล้องปกติเพื่อบอกความในใจ</h2>
+                    <p class="text-[10px] text-slate-500 mb-4 mt-2 font-bold leading-relaxed text-balance">แชร์ความรู้สึกแล้วรับ SantaCode เพื่อสะสมตราปั๊มกิจกรรม</p>
+                    <button onclick="switchToWriteMode()" class="w-full btn-hub-red py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i> เขียนข้อความที่นี่
                     </button>
                 </div>
             </div>
@@ -190,61 +278,65 @@
     </div>
 
     <!-- WRITE VIEW -->
-    <div id="write-view" class="relative h-screen w-full flex flex-col items-center justify-center p-6 z-20 hidden-view overflow-y-auto">
-        <div class="glass-card w-full max-w-md p-10 relative">
+    <div id="write-view" class="relative h-screen w-full flex flex-col items-center justify-center p-6 z-[60] hidden-view overflow-y-auto">
+        <div class="glass-card w-full max-w-sm p-10 relative shadow-2xl">
             <header class="text-center mb-8">
-                <h2 class="text-3xl font-bold">ถึง แซนต้า...</h2>
-                <p class="text-sm text-slate-500 mt-2">พิมพ์รหัสนักศึกษาและข้อความของคุณ</p>
+                <div class="bg-red-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4 text-[var(--xmas-red)]">
+                    <i data-lucide="mail" class="w-10 h-10"></i>
+                </div>
+                <h2 class="text-3xl font-black text-slate-800 tracking-tight">ถึง แซนต้า...</h2>
+                <p class="text-xs text-slate-500 mt-2 font-bold text-balance text-center">ระบุรหัสนักศึกษาและพิมพ์ความในใจเพื่อรับรหัสสแตมป์</p>
             </header>
 
-            <div class="space-y-6">
-                <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1">รหัสนักศึกษา</label>
-                    <input type="text" id="input-sid" placeholder="ระบุรหัส 10 หลัก..." class="w-full px-6 py-4 rounded-2xl outline-none text-base transition-all">
-                    <div id="auth-error-msg" class="error-message hidden">ไปเข้าสู่ระบบในเว็บสะสมสแตมป์ก่อน</div>
+            <div class="space-y-5">
+                <div class="relative">
+                    <input type="text" id="input-sid" maxlength="10" placeholder="รหัสนักศึกษา 10 หลัก" 
+                        class="w-full input-hub px-6 py-4 text-xl font-mono text-center tracking-widest">
+                    <div id="auth-error-msg" class="text-[var(--xmas-red)] text-[10px] font-bold mt-2 text-center hidden flex items-center justify-center gap-1 bg-red-50 p-2 rounded-xl">
+                        <i data-lucide="alert-circle" size="12"></i> เข้าสู่ระบบในเว็บสะสมสแตมป์ก่อน
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1">ชื่อ / ฉายา</label>
-                    <input type="text" id="input-name" placeholder="ชื่อที่จะติดบนกล่องของขวัญ..." class="w-full px-6 py-4 rounded-2xl outline-none text-base transition-all">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1">ข้อความ</label>
-                    <textarea id="input-message" rows="3" placeholder="ความในใจที่อยากบอก..." class="w-full px-6 py-4 rounded-2xl outline-none text-base resize-none transition-all"></textarea>
-                </div>
-                <button id="submit-btn" class="w-full btn-primary py-4.5 rounded-2xl font-bold text-lg shadow-xl active:scale-95 transition-all">
-                    ส่งข้อความรับรหัสสแตมป์
+                <input type="text" id="input-name" placeholder="ระบุชื่อ / ฉายา" 
+                    class="w-full input-hub px-6 py-4 text-center font-bold">
+                
+                <textarea id="input-message" rows="3" placeholder="พิมพ์ความในใจที่นี่..." 
+                    class="w-full input-hub px-6 py-4 text-center resize-none font-bold text-sm"></textarea>
+                
+                <button id="submit-btn" class="w-full btn-hub-red py-5 rounded-[1.5rem] font-black text-xl shadow-xl active:scale-95">
+                    ส่งความในใจ
                 </button>
-                <button onclick="switchToMainMode()" class="w-full text-slate-400 text-sm font-medium py-2">ยกเลิก</button>
+                <button onclick="switchToMainMode()" class="w-full text-slate-400 text-sm font-bold py-2 uppercase tracking-widest text-center">ยกเลิก</button>
             </div>
         </div>
     </div>
 
     <!-- Result Modal -->
-    <div id="result-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xl z-[100] hidden flex items-center justify-center p-6">
-        <div class="bg-white w-full max-w-sm p-12 text-center rounded-[48px] shadow-2xl relative border-b-8 border-[var(--christmas-yellow)]">
-            <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="gift" class="text-emerald-500 w-12 h-12"></i>
+    <div id="result-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[100] hidden flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm rounded-[3rem] p-12 text-center shadow-2xl border-t-8 border-[var(--xmas-red)]">
+            <div class="bg-green-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 text-[var(--xmas-green)] shadow-inner">
+                <i data-lucide="check-circle" class="w-12 h-12"></i>
             </div>
-            <h3 class="text-2xl font-bold text-slate-800 mb-2">ส่งสำเร็จแล้ว!</h3>
-            <p class="text-sm text-slate-500 mb-8">SantaCode ของคุณคือ</p>
+            <h3 class="text-3xl font-black text-slate-800 mb-2 text-center">ส่งสำเร็จ!</h3>
+            <p class="text-xs text-slate-500 mb-8 font-bold leading-relaxed text-balance text-center">บันทึกรหัส SantaCode เพื่อไปใช้รับตราปั๊มที่บูธกิจกรรม</p>
             
-            <div id="display-santa-code" class="text-5xl font-mono font-black text-[var(--christmas-green)] py-8 mb-8 rounded-[32px] bg-slate-50 shadow-inner tracking-widest">
-                ----
+            <div class="bg-slate-50 py-8 rounded-[2.5rem] text-center mb-8 border border-slate-100 shadow-inner">
+                <div id="display-santa-code" class="text-6xl font-mono font-black text-[var(--xmas-green)] tracking-widest">----</div>
+                <p class="text-[10px] text-slate-400 font-black uppercase mt-3 tracking-[0.4em]">SantaCode</p>
             </div>
 
             <div class="flex flex-col gap-4">
-                <button id="copy-btn" class="flex items-center justify-center gap-3 bg-[var(--christmas-green)] py-4.5 rounded-2xl font-bold text-white shadow-lg active:scale-95 transition-all">
-                    <i data-lucide="copy" class="w-5 h-5"></i> คัดลอกรหัส
+                <button id="copy-btn" class="w-full bg-[var(--xmas-green)] text-white py-4.5 rounded-2xl font-black text-lg shadow-xl active:scale-95">
+                    คัดลอกรหัส
                 </button>
-                <button onclick="location.reload()" class="text-sm font-bold text-slate-400 py-2">ตกลง</button>
+                <button onclick="location.reload()" class="text-sm font-bold text-slate-400 py-2 text-center">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBSODrRewqxiV0q5rjQ6nLDWabumiFmbQQ",
@@ -260,71 +352,56 @@
         const db = getFirestore(app);
         const appId = 'stamp-booth-v1';
         
-        // Paths
         const tellsantaPath = ['artifacts', appId, 'public', 'data', 'tellsanta'];
         const participantsPath = ['artifacts', appId, 'public', 'data', 'participants'];
-        
         const santaCollection = collection(db, ...tellsantaPath);
 
         const generateSantaCode = () => {
             const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; 
-            let res = '';
-            for (let i = 0; i < 4; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
-            return res;
+            return Array.from({length:4}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
         };
 
         const initIcons = () => { if (window.lucide) window.lucide.createIcons(); };
 
-        const initAuth = async () => {
-            if (auth.currentUser) return auth.currentUser;
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                try {
-                    const res = await signInWithCustomToken(auth, __initial_auth_token);
-                    return res.user;
-                } catch (err) { console.warn("Token mismatched, using anon"); }
-            }
-            try {
-                const res = await signInAnonymously(auth);
-                return res.user;
-            } catch (err) { return null; }
-        };
-
-        const showWriteView = () => {
+        const showWriteMode = () => {
             document.getElementById('main-view').classList.add('hidden-view');
             document.getElementById('write-view').classList.remove('hidden-view');
+            initIcons();
         };
-        const showMainView = () => {
+
+        const showMainMode = () => {
             document.getElementById('main-view').classList.remove('hidden-view');
             document.getElementById('write-view').classList.add('hidden-view');
             generateQR();
+            initIcons();
         };
-        window.switchToWriteMode = () => showWriteView();
-        window.switchToMainMode = () => showMainView();
 
-        const createShootingStars = () => {
-            const container = document.getElementById('shooting-stars-container');
-            setInterval(() => {
-                const star = document.createElement('div');
-                star.className = 'shooting-star';
-                star.style.left = `${Math.random() * 100}%`;
-                star.style.top = `${Math.random() * 40}%`;
-                star.style.setProperty('--speed', `${Math.random() * 1.5 + 0.5}s`);
-                container.appendChild(star);
-                setTimeout(() => star.remove(), 2500);
-            }, 5000);
-        };
+        window.switchToWriteMode = showWriteMode;
+        window.switchToMainMode = showMainMode;
 
         const createSnow = () => {
             const container = document.getElementById('sparkle-container');
-            for (let i = 0; i < 50; i++) {
+            if (!container) return;
+            
+            const snowCount = 45;
+            for (let i = 0; i < snowCount; i++) {
                 const s = document.createElement('div');
                 s.className = 'sparkle';
-                const size = Math.random() * 15 + 5; 
+                
+                const isLarge = Math.random() > 0.7;
+                const size = isLarge ? Math.random() * 12 + 10 : Math.random() * 5 + 2;
+                
                 s.style.width = `${size}px`;
                 s.style.height = `${size}px`;
                 s.style.left = `${Math.random() * 100}vw`;
-                s.style.setProperty('--duration', `${Math.random() * 12 + 8}s`);
-                s.style.setProperty('--opacity', Math.random() * 0.4 + 0.2);
+                
+                const duration = isLarge ? Math.random() * 6 + 6 : Math.random() * 8 + 10;
+                s.style.setProperty('--duration', `${duration}s`);
+                
+                const opacity = isLarge ? Math.random() * 0.4 + 0.3 : Math.random() * 0.5 + 0.2;
+                s.style.opacity = opacity;
+                if (isLarge) s.style.filter = 'blur(1px)';
+                
                 s.style.animationDelay = `${Math.random() * 10}s`;
                 container.appendChild(s);
             }
@@ -337,49 +414,33 @@
             const currentUrl = window.location.origin + window.location.pathname;
             new QRCode(qrTarget, {
                 text: `${currentUrl}?mode=write`, 
-                width: 120,
-                height: 120,
-                colorDark : "#165B33",
+                width: 100,
+                height: 100,
+                colorDark : "#165b33",
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
         };
 
-        const dropGift = (wish, index) => {
-            const pile = document.getElementById('gift-pile');
-            if (!pile) return;
-            const gift = document.createElement('div');
-            gift.className = 'gift-box';
-            const colors = ['#D42426', '#165B33', '#F8B229', '#1D4E89', '#A0C4FF'];
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            const size = 50 + Math.random() * 25;
-            const left = 5 + (Math.random() * 90);
-            
-            const rotStart = (Math.random() * 360);
-            const rotEnd = (Math.random() * 20) - 10;
-            const targetY = (pile.offsetHeight - 90) - (Math.min(index, 35) * 6); 
+        const createGiftItem = (wish, index) => {
+            const giftItem = document.createElement('div');
+            giftItem.className = 'gift-item';
+            giftItem.style.animationDelay = `${index * 0.4}s`; 
 
-            gift.style.left = `${left}%`;
-            gift.style.width = `${size}px`;
-            gift.style.height = `${size}px`;
-            gift.style.setProperty('--target-y', `${targetY}px`);
-            gift.style.setProperty('--rot-start', `${rotStart}deg`);
-            gift.style.setProperty('--rot-end', `${rotEnd}deg`);
+            const colors = ['#d42426', '#165b33', '#0ea5e9', '#f59e0b', '#7c3aed'];
+            const color = colors[index % colors.length];
 
-            gift.innerHTML = `
-                <div class="relative w-full h-full">
-                    <div class="absolute inset-0 rounded-2xl" style="background: ${color}; box-shadow: inset -4px -4px 10px rgba(0,0,0,0.15), 0 5px 15px rgba(0,0,0,0.1)"></div>
-                    <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1/5 bg-white/40"></div>
-                    <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1/4 bg-white/40"></div>
-                    <div class="absolute -top-3 -right-2 bg-white text-slate-800 text-[8px] px-2 py-0.5 rounded-lg shadow-md border border-slate-100 font-bold rotate-12">
-                        ${wish.name || 'Friend'}
-                    </div>
-                    <div class="gift-scroll-container">
-                        <div class="gift-scroll-text">${wish.message} &nbsp; • &nbsp; จาก: ${wish.name} &nbsp; • &nbsp; </div>
-                    </div>
+            giftItem.innerHTML = `
+                <div class="gift-box-visual" style="background: ${color}; background-image: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);">
+                    <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1/4 bg-white/20"></div>
+                    <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1/4 bg-white/20"></div>
+                    <div class="tape-label">${wish.name || 'Friend'}</div>
+                </div>
+                <div class="gift-scroll-container">
+                    <div class="gift-scroll-text">${wish.message} &nbsp; • &nbsp; จาก: ${wish.name} &nbsp; • &nbsp; </div>
                 </div>
             `;
-            pile.appendChild(gift);
+            return giftItem;
         };
 
         document.getElementById('submit-btn').addEventListener('click', async () => {
@@ -393,43 +454,31 @@
             if (!sid || !name || !msg) return;
             
             btn.disabled = true;
-            btn.innerHTML = 'กำลังตรวจสอบข้อมูล...';
+            btn.innerHTML = "กำลังประมวลผล...";
             errorLabel.classList.add('hidden');
 
             try {
-                const user = await initAuth();
-                if (!user) throw new Error("Auth failed");
-
-                // 1. Check if student exists in participants collection
+                await signInAnonymously(auth);
                 const participantRef = doc(db, ...participantsPath, sid);
                 const participantSnap = await getDoc(participantRef);
 
                 if (!participantSnap.exists()) {
                     errorLabel.classList.remove('hidden');
                     btn.disabled = false;
-                    btn.innerHTML = 'ส่งข้อความรับรหัสสแตมป์';
+                    btn.innerHTML = 'ส่งความในใจ';
                     return;
                 }
 
-                // 2. Manage SantaCode in tellsanta collection
                 const docRef = doc(db, ...tellsantaPath, sid);
                 const existing = await getDoc(docRef);
                 const scode = (existing.exists() && existing.data().SantaCode) ? existing.data().SantaCode : generateSantaCode();
 
-                // 3. Save wish to tellsanta
                 await setDoc(docRef, {
-                    studentId: sid,
-                    name: name,
-                    message: msg,
-                    timestamp: new Date(),
-                    uid: user.uid,
-                    SantaCode: scode
+                    studentId: sid, name, message: msg,
+                    timestamp: new Date(), uid: auth.currentUser.uid, SantaCode: scode
                 });
 
-                // 4. Update SantaCode back to participants collection as requested
-                await updateDoc(participantRef, {
-                    SantaCode: scode
-                });
+                await updateDoc(participantRef, { SantaCode: scode });
                 
                 document.getElementById('display-santa-code').innerText = scode;
                 document.getElementById('result-modal').classList.remove('hidden');
@@ -448,33 +497,27 @@
             el.select(); document.execCommand("copy");
             document.body.removeChild(el);
             document.getElementById('copy-btn').innerText = 'คัดลอกสำเร็จ!';
-            setTimeout(() => { document.getElementById('copy-btn').innerHTML = '<i data-lucide="copy" class="w-5 h-5"></i> คัดลอกรหัส'; initIcons(); }, 2000);
         });
 
         window.onload = async () => {
             initIcons();
             createSnow();
-            createShootingStars();
             
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('mode') === 'write') {
-                showWriteView();
-            } else {
-                showMainView();
-            }
+            if (urlParams.get('mode') === 'write') showWriteMode();
+            else showMainMode();
             
-            const user = await initAuth();
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    onSnapshot(santaCollection, (snap) => {
-                        const items = [];
-                        snap.forEach(d => { if(d.exists()) items.push(d.data()); });
-                        const sorted = items.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
-                        const pile = document.getElementById('gift-pile');
-                        if (pile) {
-                            pile.innerHTML = '';
-                            sorted.slice(-35).forEach((item, idx) => dropGift(item, idx));
-                        }
+            await signInAnonymously(auth);
+            onSnapshot(santaCollection, (snap) => {
+                const items = [];
+                snap.forEach(d => { if(d.exists()) items.push(d.data()); });
+                const sorted = items.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+                
+                const giftTrain = document.getElementById('gift-train');
+                if (giftTrain) {
+                    giftTrain.innerHTML = '';
+                    sorted.slice(-12).forEach((item, idx) => {
+                        giftTrain.appendChild(createGiftItem(item, idx));
                     });
                 }
             });
