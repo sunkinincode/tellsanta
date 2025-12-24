@@ -146,6 +146,14 @@
             background: rgba(255, 255, 255, 0.5) !important;
             border: 1px solid rgba(0, 0, 0, 0.05) !important;
         }
+
+        .error-message {
+            color: var(--christmas-red);
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 8px;
+            text-align: center;
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -174,7 +182,7 @@
                     <h2 class="text-xl font-bold">สแกนส่งความสุข</h2>
                     <p class="text-xs text-slate-500 mb-4 mt-1">รับ SantaCode สำหรับสะสมสแตมป์กิจกรรม</p>
                     <button onclick="switchToWriteMode()" class="w-full btn-primary py-3.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transform active:scale-95 transition-all">
-                        <i data-lucide="edit-3" class="w-5 h-5"></i> เขียนข้อความ
+                        <i data-lucide="edit-3" class="w-4 h-4"></i> เขียนข้อความ
                     </button>
                 </div>
             </div>
@@ -193,6 +201,7 @@
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1">รหัสนักศึกษา</label>
                     <input type="text" id="input-sid" placeholder="ระบุรหัส 10 หลัก..." class="w-full px-6 py-4 rounded-2xl outline-none text-base transition-all">
+                    <div id="auth-error-msg" class="error-message hidden">ไปเข้าสู่ระบบในเว็บสะสมสแตมป์ก่อน</div>
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 pl-1">ชื่อ / ฉายา</label>
@@ -235,7 +244,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBSODrRewqxiV0q5rjQ6nLDWabumiFmbQQ",
@@ -250,8 +259,12 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'stamp-booth-v1';
-        const collectionPath = ['artifacts', appId, 'public', 'data', 'tellsanta'];
-        const santaCollection = collection(db, ...collectionPath);
+        
+        // Paths
+        const tellsantaPath = ['artifacts', appId, 'public', 'data', 'tellsanta'];
+        const participantsPath = ['artifacts', appId, 'public', 'data', 'participants'];
+        
+        const santaCollection = collection(db, ...tellsantaPath);
 
         const generateSantaCode = () => {
             const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; 
@@ -358,7 +371,7 @@
                     <div class="absolute inset-0 rounded-2xl" style="background: ${color}; box-shadow: inset -4px -4px 10px rgba(0,0,0,0.15), 0 5px 15px rgba(0,0,0,0.1)"></div>
                     <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1/5 bg-white/40"></div>
                     <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1/4 bg-white/40"></div>
-                    <div class="absolute -top-3 -right-2 bg-white text-slate-800 text-[8px] px-2 py-0.5 rounded-lg shadow-md border border-slate-50 font-bold rotate-12">
+                    <div class="absolute -top-3 -right-2 bg-white text-slate-800 text-[8px] px-2 py-0.5 rounded-lg shadow-md border border-slate-100 font-bold rotate-12">
                         ${wish.name || 'Friend'}
                     </div>
                     <div class="gift-scroll-container">
@@ -370,21 +383,40 @@
         };
 
         document.getElementById('submit-btn').addEventListener('click', async () => {
-            const sid = document.getElementById('input-sid').value.trim();
+            const sidInput = document.getElementById('input-sid');
+            const sid = sidInput.value.trim();
             const name = document.getElementById('input-name').value.trim();
             const msg = document.getElementById('input-message').value.trim();
             const btn = document.getElementById('submit-btn');
+            const errorLabel = document.getElementById('auth-error-msg');
 
             if (!sid || !name || !msg) return;
+            
             btn.disabled = true;
-            btn.innerHTML = 'กำลังประมวลผล...';
+            btn.innerHTML = 'กำลังตรวจสอบข้อมูล...';
+            errorLabel.classList.add('hidden');
 
             try {
                 const user = await initAuth();
-                const docRef = doc(db, ...collectionPath, sid);
+                if (!user) throw new Error("Auth failed");
+
+                // 1. Check if student exists in participants collection
+                const participantRef = doc(db, ...participantsPath, sid);
+                const participantSnap = await getDoc(participantRef);
+
+                if (!participantSnap.exists()) {
+                    errorLabel.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = 'ส่งข้อความรับรหัสสแตมป์';
+                    return;
+                }
+
+                // 2. Manage SantaCode in tellsanta collection
+                const docRef = doc(db, ...tellsantaPath, sid);
                 const existing = await getDoc(docRef);
                 const scode = (existing.exists() && existing.data().SantaCode) ? existing.data().SantaCode : generateSantaCode();
 
+                // 3. Save wish to tellsanta
                 await setDoc(docRef, {
                     studentId: sid,
                     name: name,
@@ -393,11 +425,17 @@
                     uid: user.uid,
                     SantaCode: scode
                 });
+
+                // 4. Update SantaCode back to participants collection as requested
+                await updateDoc(participantRef, {
+                    SantaCode: scode
+                });
                 
                 document.getElementById('display-santa-code').innerText = scode;
                 document.getElementById('result-modal').classList.remove('hidden');
                 initIcons();
             } catch (err) {
+                console.error(err);
                 btn.innerHTML = 'ลองใหม่อีกครั้ง';
                 btn.disabled = false;
             }
