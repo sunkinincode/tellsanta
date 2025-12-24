@@ -190,7 +190,7 @@
         </div>
     </div>
 
-    <!-- Result Modal (Common) -->
+    <!-- Result Modal -->
     <div id="result-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[100] hidden flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm p-10 text-center rounded-[40px] shadow-2xl relative border-b-8 border-[var(--christmas-yellow)]">
             <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -217,14 +217,17 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBSODrRewqxiV0q5rjQ6nLDWabumiFmbQQ",
-            authDomain: "stamp-booth.firebaseapp.com",
-            projectId: "stamp-booth",
-            storageBucket: "stamp-booth.firebasestorage.app",
-            messagingSenderId: "996394633734",
-            appId: "1:996394633734:web:38e6594b45ae0d2088d187"
-        };
+        // Firebase Configuration - Using System Environment Variable for correct API Key
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "AIzaSyBSODrRewqxiV0q5rjQ6nLDWabumiFmbQQ",
+                authDomain: "stamp-booth.firebaseapp.com",
+                projectId: "stamp-booth",
+                storageBucket: "stamp-booth.firebasestorage.app",
+                messagingSenderId: "996394633734",
+                appId: "1:996394633734:web:38e6594b45ae0d2088d187"
+            };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -246,20 +249,14 @@
             if (auth.currentUser) return auth.currentUser;
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    return (await signInWithCustomToken(auth, __initial_auth_token)).user;
+                    const res = await signInWithCustomToken(auth, __initial_auth_token);
+                    return res.user;
                 }
-                return (await signInAnonymously(auth)).user;
-            } catch (err) { return null; }
-        };
-
-        // UI View Toggling Logic (Fixed: Replaced pushState with direct DOM toggle to avoid SecurityError)
-        const checkMode = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const mode = urlParams.get('mode');
-            if (mode === 'write') {
-                showWriteView();
-            } else {
-                showMainView();
+                const res = await signInAnonymously(auth);
+                return res.user;
+            } catch (err) { 
+                console.error("Auth Error:", err);
+                return null; 
             }
         };
 
@@ -274,13 +271,8 @@
             generateQR();
         };
 
-        window.switchToWriteMode = () => {
-            showWriteView();
-        };
-
-        window.switchToMainMode = () => {
-            showMainView();
-        };
+        window.switchToWriteMode = () => showWriteView();
+        window.switchToMainMode = () => showMainView();
 
         const createSnow = () => {
             const container = document.getElementById('sparkle-container');
@@ -303,7 +295,6 @@
             const qrTarget = document.getElementById("qrcode");
             if (!qrTarget) return;
             qrTarget.innerHTML = "";
-            // Keep the query param for external scanning, but handle locally in the app
             const currentUrl = window.location.origin + window.location.pathname;
             new QRCode(qrTarget, {
                 text: `${currentUrl}?mode=write`, 
@@ -358,6 +349,8 @@
 
             try {
                 const user = await initAuth();
+                if (!user) throw new Error("Authentication failed");
+
                 const docRef = doc(db, ...collectionPath, sid);
                 const existing = await getDoc(docRef);
                 const scode = (existing.exists() && existing.data().SantaCode) ? existing.data().SantaCode : generateSantaCode();
@@ -375,8 +368,8 @@
                 document.getElementById('result-modal').classList.remove('hidden');
                 initIcons();
             } catch (err) {
-                console.error("Submission Error:", err);
-                btn.innerHTML = 'ลองใหม่อีกครั้ง';
+                console.error("Submission Error Details:", err);
+                btn.innerHTML = 'ลองใหม่อีกครั้ง (ตรวจสอบสิทธิ์เข้าถึง)';
                 btn.disabled = false;
             }
         });
@@ -388,15 +381,24 @@
             el.select(); document.execCommand("copy");
             document.body.removeChild(el);
             document.getElementById('copy-btn').innerText = 'คัดลอกสำเร็จ!';
-            setTimeout(() => { document.getElementById('copy-btn').innerHTML = '<i data-lucide="copy" class="w-5 h-5"></i> คัดลอกรหัส'; initIcons(); }, 2000);
+            setTimeout(() => { 
+                document.getElementById('copy-btn').innerHTML = '<i data-lucide="copy" class="w-5 h-5"></i> คัดลอกรหัส'; 
+                initIcons(); 
+            }, 2000);
         });
 
-        window.onload = async () => {
+        const start = async () => {
             initIcons();
             createSnow();
-            checkMode(); // Handle initial check for mode=write from URL
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('mode') === 'write') {
+                showWriteView();
+            } else {
+                showMainView();
+            }
+            
             await initAuth();
-
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     onSnapshot(santaCollection, (snap) => {
@@ -415,8 +417,7 @@
             });
         };
 
-        // Listen for browser back/forward if the URL did change externally
-        window.onpopstate = checkMode;
+        window.onload = start;
     </script>
 </body>
 </html>
